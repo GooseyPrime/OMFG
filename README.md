@@ -2,6 +2,26 @@
 
 A GitHub App for automated fork monitoring and synchronization as a service. Keep your forks in sync with upstream repositories effortlessly! 🚀
 
+## Landing Page
+
+OMFG includes a stylish landing page that showcases the app's features and provides a call-to-action for installation. The landing page is served by a separate Express server for optimal performance and reliability.
+
+### Running the Landing Page
+
+```bash
+# Start the landing page server (runs on port 3001 by default)
+npm run start:landing
+
+# The landing page will be available at http://localhost:3001
+```
+
+The landing page features:
+- 🎨 Modern design with gradients and bold typography
+- 📱 Responsive layout that works on all devices
+- 🖼️ Prominent header banner with app branding
+- ✨ Smooth animations and hover effects
+- 🔗 Direct links to install the GitHub App
+
 ## Features
 
 - 🔄 **Automated Sync**: Automatically synchronize your forks with upstream repositories
@@ -121,8 +141,11 @@ npm test
 # Run linting
 npm run lint
 
-# Start development server
+# Start development server (GitHub App)
 npm run dev
+
+# Start landing page server (separate terminal)
+npm run start:landing
 ```
 
 ### Testing

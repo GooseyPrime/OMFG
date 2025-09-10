@@ -131,15 +131,55 @@ For more information, visit: https://github.com/GooseyPrime/OMFG`
     }
   });
 
-  // Health check endpoint - commented out due to API change in Probot v14
-  // TODO: Re-enable when compatible route method is found
-  // app.route().get('/health', (req, res) => {
-  //   res.json({
-  //     status: 'ok',
-  //     app: 'OMFG',
-  //     message: 'Oh My Forking Git is running! 🚀'
-  //   });
-  // });
+  // Health check endpoint
+  app.route().get('/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      app: 'OMFG',
+      message: 'Oh My Forking Git is running! 🚀'
+    });
+  });
+
+  // Serve static files from the public directory
+  const path = require('path');
+  const fs = require('fs');
+  const publicPath = path.join(__dirname, '..', 'public');
+  
+  // Get the express app instance
+  const expressApp = app.route();
+  
+  // Serve static assets  
+  expressApp.get('/assets/*', (req, res) => {
+    const filePath = path.join(publicPath, req.path);
+    
+    // Check if file exists
+    if (fs.existsSync(filePath)) {
+      // Set appropriate content type for images
+      if (filePath.endsWith('.png')) {
+        res.setHeader('Content-Type', 'image/png');
+      } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+        res.setHeader('Content-Type', 'image/jpeg');
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      }
+      
+      res.sendFile(filePath);
+    } else {
+      res.status(404).send('File not found');
+    }
+  });
+  
+  // Serve the landing page at root for production use
+  expressApp.get('/landing', (req, res) => {
+    const indexPath = path.join(publicPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Landing page not found');
+    }
+  });
 
   app.log.info('OMFG GitHub App is ready! 🎯');
 };

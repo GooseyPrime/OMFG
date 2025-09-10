@@ -6,6 +6,7 @@
   "scripts": {
     "start": "probot run ./app/index.js",
     "dev": "nodemon --exec probot run ./app/index.js",
+    "start:landing": "node server.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint app/ tests/",
@@ -25,6 +26,7 @@
   },
   "dependencies": {
     "@octokit/rest": "^22.0.0",
+    "express": "^5.1.0",
     "js-yaml": "^4.1.0",
     "probot": "^14.0.2"
   },

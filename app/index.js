@@ -131,14 +131,15 @@ For more information, visit: https://github.com/GooseyPrime/OMFG`
     }
   });
 
-  // Health check endpoint
-  app.route().get('/health', (req, res) => {
-    res.json({
-      status: 'ok',
-      app: 'OMFG',
-      message: 'Oh My Forking Git is running! 🚀'
-    });
-  });
+  // Health check endpoint - commented out due to API change in Probot v14
+  // TODO: Re-enable when compatible route method is found
+  // app.route().get('/health', (req, res) => {
+  //   res.json({
+  //     status: 'ok',
+  //     app: 'OMFG',
+  //     message: 'Oh My Forking Git is running! 🚀'
+  //   });
+  // });
 
   app.log.info('OMFG GitHub App is ready! 🎯');
 };

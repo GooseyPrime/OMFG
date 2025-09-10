@@ -1,0 +1,26 @@
+# OMFG (Oh My Forking Git) Configuration
+# Place this file as .omfg.yml in your repository root
+
+# Whether to automatically sync the fork with upstream
+auto_sync: true
+
+# The upstream repository to sync from (format: owner/repo)
+upstream: GooseyPrime/OMFG
+
+# Optional: Branches to sync (default: ['main', 'master'])
+# branches:
+#   - main
+#   - develop
+
+# Optional: Whether to create pull requests instead of direct pushes
+# create_pr: true
+
+# Optional: PR title template for auto-sync PRs
+# pr_title: "🔄 Auto-sync with upstream"
+
+# Optional: PR body template for auto-sync PRs
+# pr_body: |
+#   This PR automatically syncs changes from the upstream repository.
+#   
+#   Upstream: {upstream}
+#   Branch: {branch}

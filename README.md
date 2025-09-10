@@ -1,219 +1,199 @@
-# OMFG - Oh My Forking Git 🚀
+# OMFG (Oh My Forking Git)
 
-[![CI](https://github.com/GooseyPrime/OMFG/actions/workflows/ci.yml/badge.svg)](https://github.com/GooseyPrime/OMFG/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+A GitHub App for automated fork monitoring and synchronization as a service. Keep your forks in sync with upstream repositories effortlessly! 🚀
 
-A minimal, robust, and intuitive GitHub Action that fully syncs forked repositories with upstream, including code, workflows, and secrets. OMFG prioritizes security, auditability, and seamless user experience.
+## Features
 
-## Features ✨
+- 🔄 **Automated Sync**: Automatically synchronize your forks with upstream repositories
+- 🎯 **Smart Detection**: Monitors push events and fork creation to trigger sync operations
+- ⚙️ **Configurable**: Simple YAML configuration per repository
+- 🔀 **Flexible Sync Methods**: Choose between pull requests or direct pushes
+- 📊 **Comprehensive Logging**: Detailed logging and error handling
+- 🛡️ **Secure**: Built with GitHub App security best practices
 
-- 🔄 **Full Repository Sync**: Code, workflows, and secrets
-- 🔍 **Dry-Run Mode**: Preview changes before applying
-- ⚡ **Smart Conflict Handling**: Multiple resolution strategies
-- 🎯 **Fine-Grained Controls**: Include/exclude patterns
-- 🛡️ **Security First**: Secure token handling and validation
-- 📊 **Comprehensive Reporting**: Detailed change summaries
-- 🔐 **Approval Workflows**: Optional manual approval process
-- 🚀 **Zero Configuration**: Smart defaults with auto-detection
+## Installation
 
-## Quick Start 🚀
+### As a GitHub App
 
-### Basic Usage
+1. **Install the App**: Visit the [OMFG GitHub App page](#) and click "Install"
+2. **Choose Repositories**: Select which repositories you want OMFG to monitor
+3. **Configure Repositories**: Add a `.omfg.yml` configuration file to each repository you want to sync
 
-```yaml
-name: Sync Fork
-on:
-  schedule:
-    - cron: '0 6 * * *'  # Daily at 6 AM
-  workflow_dispatch:
+### Required Permissions
 
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Sync with upstream
-        uses: GooseyPrime/OMFG@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-```
+The OMFG GitHub App requires the following permissions:
 
-### Advanced Configuration
+- **Repository permissions**:
+  - Contents: Read & Write (to read config and sync files)
+  - Pull requests: Read & Write (to create sync PRs)
+  - Issues: Write (to create welcome issues in new forks)
+  - Metadata: Read (to access repository information)
 
-```yaml
-- name: Advanced sync
-  uses: GooseyPrime/OMFG@v1
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    upstream-repo: 'original-owner/repo-name'  # Auto-detected if not specified
-    dry-run: false
-    sync-code: true
-    sync-workflows: true
-    sync-secrets: false
-    conflict-strategy: 'merge'  # merge, rebase, or fail
-    include-patterns: 'src/**,docs/**'
-    exclude-patterns: 'tests/**,*.tmp'
-    require-approval: false
-```
+- **Organization permissions**:
+  - Members: Read (to check organization membership)
 
-## Input Parameters 📝
+- **Events**:
+  - Push
+  - Pull request
+  - Fork
+  - Installation
+  - Installation repositories
 
-| Parameter | Description | Required | Default |
-|-----------|-------------|----------|---------|
-| `github-token` | GitHub token with repo permissions | ✅ | `${{ github.token }}` |
-| `upstream-repo` | Upstream repository (owner/repo) | ❌ | Auto-detected from fork |
-| `dry-run` | Preview changes without applying | ❌ | `false` |
-| `sync-code` | Sync code changes | ❌ | `true` |
-| `sync-workflows` | Sync GitHub Actions workflows | ❌ | `true` |
-| `sync-secrets` | Sync repository secrets | ❌ | `false` |
-| `conflict-strategy` | How to handle conflicts | ❌ | `merge` |
-| `include-patterns` | Files to include (glob patterns) | ❌ | `*` |
-| `exclude-patterns` | Files to exclude (glob patterns) | ❌ | `''` |
-| `require-approval` | Create PR for manual approval | ❌ | `false` |
+## Configuration
 
-## Outputs 📤
-
-| Output | Description |
-|--------|-------------|
-| `changes-summary` | Detailed summary of all changes |
-| `sync-status` | Status: success, conflicts, or failed |
-| `conflicts-detected` | Comma-separated list of conflicted files |
-| `files-changed` | Number of files that were modified |
-
-## Conflict Resolution Strategies 🔧
-
-### Merge (Default)
-- Creates merge commits
-- Preserves history from both branches
-- Safe for most scenarios
-
-### Rebase
-- Creates linear history
-- Replays local commits on top of upstream
-- Cleaner git history but rewrites commits
-
-### Fail
-- Stops on first conflict
-- Requires manual intervention
-- Most conservative approach
-
-## Security Considerations 🛡️
-
-- **Token Permissions**: Requires `repo` scope for private repositories
-- **Secret Sync**: Limited by GitHub API (can only list names, not values)
-- **Approval Mode**: Creates pull requests for sensitive changes
-- **Audit Trail**: Comprehensive logging of all operations
-
-## Examples 📚
-
-### Daily Automatic Sync
+Create a `.omfg.yml` file in the root of your repository:
 
 ```yaml
-name: Daily Sync
-on:
-  schedule:
-    - cron: '0 6 * * *'
+# Whether to automatically sync the fork with upstream
+auto_sync: true
 
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: GooseyPrime/OMFG@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+# The upstream repository to sync from (format: owner/repo)
+upstream: GooseyPrime/OMFG
+
+# Optional: Branches to sync (default: ['main', 'master'])
+branches:
+  - main
+  - develop
+
+# Optional: Whether to create pull requests instead of direct pushes (default: true)
+create_pr: true
+
+# Optional: PR title template for auto-sync PRs
+pr_title: "🔄 Auto-sync with upstream"
+
+# Optional: PR body template for auto-sync PRs
+pr_body: |
+  This PR automatically syncs changes from the upstream repository.
+  
+  Upstream: {upstream}
+  Branch: {branch}
 ```
 
-### Sync with Approval
+### Configuration Reference
 
-```yaml
-- uses: GooseyPrime/OMFG@v1
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    require-approval: true
-    conflict-strategy: 'fail'
-```
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `auto_sync` | boolean | ✅ | - | Enable/disable automatic synchronization |
+| `upstream` | string | ✅ | - | Upstream repository in `owner/repo` format |
+| `branches` | array | ❌ | `['main', 'master']` | Branches to monitor and sync |
+| `create_pr` | boolean | ❌ | `true` | Create pull requests instead of direct pushes |
+| `pr_title` | string | ❌ | `"🔄 Auto-sync with upstream"` | Template for PR titles |
+| `pr_body` | string | ❌ | Default template | Template for PR descriptions |
 
-### Workflow-Only Sync
+### Template Variables
 
-```yaml
-- uses: GooseyPrime/OMFG@v1
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    sync-code: false
-    sync-workflows: true
-    sync-secrets: false
-```
+In `pr_title` and `pr_body`, you can use these variables:
 
-### Custom Patterns
+- `{upstream}`: The upstream repository name
+- `{branch}`: The branch being synced
+- `{commits_behind}`: Number of commits behind upstream
+- `{commit_list}`: List of commits being synced
 
-```yaml
-- uses: GooseyPrime/OMFG@v1
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    include-patterns: 'src/**,docs/**,*.md'
-    exclude-patterns: 'src/tests/**,*.log'
-```
+## How It Works
 
-## Troubleshooting 🔍
+1. **Detection**: OMFG monitors your repositories for push events and fork creation
+2. **Configuration**: Reads `.omfg.yml` from your repository root
+3. **Comparison**: Compares your fork with the configured upstream repository
+4. **Synchronization**: Creates a pull request or directly pushes changes based on your configuration
+5. **Notification**: Logs all activities and provides detailed information about sync operations
 
-### Common Issues
+## Development
 
-**Conflicts detected**
-- Review conflicted files in the action logs
-- Use `conflict-strategy: 'fail'` to stop on conflicts
-- Enable `require-approval: true` for manual review
+### Prerequisites
 
-**Permission denied**
-- Ensure token has `repo` scope
-- For organization repos, may need admin permissions
-- Secret sync requires admin access
+- Node.js 16 or higher
+- npm or yarn
+- Git
 
-**Auto-detection failed**
-- Manually specify `upstream-repo` parameter
-- Ensure repository is actually a fork
-
-### Debug Mode
-
-Enable debug logging by setting repository secret `ACTIONS_STEP_DEBUG` to `true`.
-
-## Contributing 🤝
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Run `npm test` and `npm run lint`
-6. Submit a pull request
-
-## Development 🛠️
+### Setup
 
 ```bash
+# Clone the repository
+git clone https://github.com/GooseyPrime/OMFG.git
+cd OMFG
+
 # Install dependencies
 npm install
 
 # Run tests
 npm test
 
-# Lint code
+# Run linting
 npm run lint
 
-# Build for distribution
-npm run build
+# Start development server
+npm run dev
 ```
 
-## License 📄
+### Testing
 
-MIT License - see [LICENSE](LICENSE) file for details.
+```bash
+# Run all tests
+npm test
 
-## Support 💬
+# Run tests in watch mode
+npm run test:watch
 
-- 📋 [Create an issue](https://github.com/GooseyPrime/OMFG/issues)
-- 🔧 [Request a feature](https://github.com/GooseyPrime/OMFG/issues)
-- 📖 [Read the docs](https://github.com/GooseyPrime/OMFG#readme)
+# Run tests with coverage
+npm test -- --coverage
+```
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Troubleshooting
+
+### Common Issues
+
+#### Configuration Not Found
+**Problem**: OMFG is not syncing my fork  
+**Solution**: Ensure you have a `.omfg.yml` file in your repository root with valid configuration
+
+#### Permission Denied
+**Problem**: OMFG cannot create pull requests or push changes  
+**Solution**: Check that the app has the required permissions and that your repository allows the app
+
+#### Upstream Repository Not Found
+**Problem**: Error messages about upstream repository  
+**Solution**: Verify that the `upstream` field in your configuration points to a valid, accessible repository
+
+#### Sync Conflicts
+**Problem**: Automatic sync fails due to conflicts  
+**Solution**: OMFG will create a pull request instead of direct push when conflicts are detected. Resolve conflicts manually in the PR.
+
+### FAQ
+
+**Q: Can I use OMFG with private repositories?**  
+A: Yes, OMFG works with both public and private repositories, as long as it has the necessary permissions.
+
+**Q: What happens if my fork has uncommitted changes?**  
+A: OMFG will create a pull request instead of direct push to preserve your changes and allow manual review.
+
+**Q: Can I sync multiple upstream repositories?**  
+A: Currently, OMFG supports one upstream repository per fork. For multiple upstreams, consider using separate configurations in different branches.
+
+**Q: How often does OMFG check for updates?**  
+A: OMFG responds to GitHub events in real-time. It checks for updates when pushes occur to the upstream repository.
+
+**Q: Can I customize the sync behavior?**  
+A: Yes! Use the configuration options in `.omfg.yml` to customize PR titles, descriptions, and sync behavior.
+
+## License
+
+MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- 📖 [Documentation](https://github.com/GooseyPrime/OMFG)
+- 🐛 [Report Issues](https://github.com/GooseyPrime/OMFG/issues)
+- 💬 [Discussions](https://github.com/GooseyPrime/OMFG/discussions)
 
 ---
 
-**OMFG** - Because managing forks shouldn't be a nightmare! 🎯
+Made with ❤️ by [GooseyPrime](https://github.com/GooseyPrime)
+# This trigger CI

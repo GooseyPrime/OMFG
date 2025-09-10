@@ -167,7 +167,11 @@ async function createSyncPullRequest(context, config, comparison) {
   const { repository } = context.payload;
   const logger = context.log;
 
-  const prTitle = config.pr_title || '🔄 Auto-sync with upstream';
+  const prTitle = (config.pr_title || '🔄 Auto-sync with upstream')
+    .replace('{upstream}', config.upstream)
+    .replace('{branch}', comparison.base_branch)
+    .replace('{commits_behind}', comparison.behind_by);
+    
   const prBody = (config.pr_body || `This PR automatically syncs changes from the upstream repository.
 
 **Upstream:** {upstream}

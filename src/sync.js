@@ -48,7 +48,29 @@ async function sync(options) {
     core.info('📡 Fetching from upstream repository...');
     await git.fetch('upstream');
 
-    const currentBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
+    // Get the current branch, handling detached HEAD state
+    let currentBranch;
+    try {
+      currentBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
+      if (currentBranch === 'HEAD') {
+        // We're in detached HEAD state, try to get the default branch
+        // from the upstream repository
+        const upstreamBranches = await git.branch(['-r']);
+        const defaultBranch = upstreamBranches.all.find(branch => 
+          branch.includes('upstream/main') || branch.includes('upstream/master')
+        );
+        if (defaultBranch) {
+          currentBranch = defaultBranch.replace('upstream/', '');
+        } else {
+          // Fallback to main or master
+          currentBranch = 'main';
+        }
+      }
+    } catch (error) {
+      // Fallback to main if we can't determine the branch
+      currentBranch = 'main';
+    }
+    
     core.info(`🌿 Current branch: ${currentBranch}`);
 
     if (syncCode) {
@@ -104,8 +126,29 @@ async function syncCodeChanges(git, currentBranch, conflictStrategy, dryRun) {
     core.info(`📊 Repository status: ${status.behind} commits behind, ${status.ahead} commits ahead`);
 
     if (dryRun) {
-      // Show what would be merged
-      const diffSummary = await git.diffSummary(['HEAD', `upstream/${currentBranch}`]);
+      // Show what would be merged - check if upstream branch exists first
+      let upstreamRef = `upstream/${currentBranch}`;
+      try {
+        await git.revparse(['--verify', upstreamRef]);
+      } catch (error) {
+        // Branch doesn't exist, try alternative branches
+        const upstreamBranches = await git.branch(['-r']);
+        const availableBranches = upstreamBranches.all.filter(branch => 
+          branch.includes('upstream/')
+        );
+        
+        if (availableBranches.length > 0) {
+          // Use the first available upstream branch
+          upstreamRef = availableBranches[0];
+          core.info(`📍 Using upstream branch: ${upstreamRef}`);
+        } else {
+          // No upstream branches found, skip diff
+          core.warning('⚠️ No upstream branches found for comparison');
+          return result;
+        }
+      }
+      
+      const diffSummary = await git.diffSummary(['HEAD', upstreamRef]);
       result.filesChanged = diffSummary.files.length;
       result.changes = diffSummary.files.map(file => ({
         type: 'code',
@@ -120,12 +163,30 @@ async function syncCodeChanges(git, currentBranch, conflictStrategy, dryRun) {
     }
 
     // Perform the merge/rebase based on strategy
+    let upstreamRef = `upstream/${currentBranch}`;
+    try {
+      await git.revparse(['--verify', upstreamRef]);
+    } catch (error) {
+      // Branch doesn't exist, try alternative branches
+      const upstreamBranches = await git.branch(['-r']);
+      const availableBranches = upstreamBranches.all.filter(branch => 
+        branch.includes('upstream/')
+      );
+      
+      if (availableBranches.length > 0) {
+        upstreamRef = availableBranches[0];
+        core.info(`📍 Using upstream branch for sync: ${upstreamRef}`);
+      } else {
+        throw new Error('No upstream branches found for synchronization');
+      }
+    }
+    
     if (conflictStrategy === 'rebase') {
       core.info('🔄 Rebasing against upstream...');
-      await git.rebase([`upstream/${currentBranch}`]);
+      await git.rebase([upstreamRef]);
     } else {
       core.info('🔄 Merging from upstream...');
-      await git.merge([`upstream/${currentBranch}`]);
+      await git.merge([upstreamRef]);
     }
 
     // Check for conflicts

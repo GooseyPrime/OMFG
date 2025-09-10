@@ -4,8 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs
-dist/
+# Build outputs (except dist/ which is needed for GitHub Actions)
 *.tgz
 
 # Coverage directory used by tools like istanbul

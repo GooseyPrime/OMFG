@@ -1,0 +1,36 @@
+{
+  "name": "omfg",
+  "version": "1.0.0",
+  "description": "Oh My Forking Git - A GitHub App for automated fork monitoring and synchronization",
+  "main": "app/index.js",
+  "scripts": {
+    "start": "probot run ./app/index.js",
+    "dev": "nodemon --exec probot run ./app/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint app/ test/",
+    "lint:fix": "eslint app/ test/ --fix"
+  },
+  "keywords": [
+    "github-app",
+    "probot",
+    "fork",
+    "sync",
+    "automation"
+  ],
+  "author": "GooseyPrime",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.0",
+    "js-yaml": "^4.1.0",
+    "probot": "^14.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "eslint": "^9.35.0",
+    "jest": "^30.1.3"
+  }
+}

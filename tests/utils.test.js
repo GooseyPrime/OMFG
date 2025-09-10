@@ -1,121 +1,145 @@
-const { validateInputs, summarizeChanges, shouldProcessFile, matchesPattern } = require('../src/utils');
+const { loadConfig, validateConfig } = require('../app/syncFork');
 
-describe('Utils', () => {
-  describe('validateInputs', () => {
-    test('should pass with valid inputs', async () => {
-      const inputs = {
-        conflictStrategy: 'merge',
-        upstreamRepo: 'owner/repo',
-        syncCode: true,
-        syncWorkflows: false,
-        syncSecrets: false
+describe('OMFG Sync Utils', () => {
+  let mockContext;
+
+  beforeEach(() => {
+    mockContext = {
+      log: {
+        info: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn()
+      },
+      octokit: {
+        repos: {
+          get: jest.fn(),
+          getContent: jest.fn()
+        },
+        pulls: {
+          create: jest.fn()
+        },
+        git: {
+          createRef: jest.fn(),
+          updateRef: jest.fn()
+        }
+      },
+      payload: {
+        repository: {
+          name: 'test-repo',
+          owner: { login: 'test-owner' },
+          default_branch: 'main'
+        }
+      }
+    };
+  });
+
+  describe('validateConfig', () => {
+    test('should pass with valid configuration', () => {
+      const config = {
+        auto_sync: true,
+        upstream: 'GooseyPrime/OMFG',
+        create_pr: true,
+        pr_title: 'Sync with upstream',
+        pr_body: 'Auto-sync changes'
       };
 
-      await expect(validateInputs(inputs)).resolves.not.toThrow();
+      const result = validateConfig(config);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
     });
 
-    test('should throw error for invalid conflict strategy', async () => {
-      const inputs = {
-        conflictStrategy: 'invalid',
-        syncCode: true,
-        syncWorkflows: false,
-        syncSecrets: false
+    test('should fail with invalid auto_sync type', () => {
+      const config = {
+        auto_sync: 'not-boolean',
+        upstream: 'GooseyPrime/OMFG'
       };
 
-      await expect(validateInputs(inputs)).rejects.toThrow('Invalid conflict-strategy');
+      const result = validateConfig(config);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('auto_sync must be a boolean');
     });
 
-    test('should throw error when no sync options enabled', async () => {
-      const inputs = {
-        conflictStrategy: 'merge',
-        syncCode: false,
-        syncWorkflows: false,
-        syncSecrets: false
+    test('should fail with missing upstream', () => {
+      const config = {
+        auto_sync: true,
+        upstream: ''
       };
 
-      await expect(validateInputs(inputs)).rejects.toThrow('At least one sync option must be enabled');
+      const result = validateConfig(config);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('upstream must be a string in format "owner/repo"');
     });
 
-    test('should throw error for invalid upstream repo format', async () => {
-      const inputs = {
-        conflictStrategy: 'merge',
-        upstreamRepo: 'invalid-format',
-        syncCode: true,
-        syncWorkflows: false,
-        syncSecrets: false
+    test('should fail with invalid upstream format', () => {
+      const config = {
+        auto_sync: true,
+        upstream: 'invalid-format'
       };
 
-      await expect(validateInputs(inputs)).rejects.toThrow('Invalid upstream-repo format');
+      const result = validateConfig(config);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('upstream must be in format "owner/repo"');
+    });
+
+    test('should handle optional parameters', () => {
+      const config = {
+        auto_sync: true,
+        upstream: 'GooseyPrime/OMFG',
+        create_pr: false,
+        branch: 'develop',
+        pr_title: 'Custom title',
+        pr_body: 'Custom body'
+      };
+
+      const result = validateConfig(config);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
     });
   });
 
-  describe('summarizeChanges', () => {
-    test('should create summary for successful sync', () => {
-      const syncResult = {
-        status: 'success',
-        filesChanged: 3,
-        conflicts: [],
-        changes: [
-          { type: 'code', action: 'synced', file: 'src/index.js', insertions: 10, deletions: 2 },
-          { type: 'workflow', action: 'synced', file: '.github/workflows/ci.yml' }
-        ],
-        error: null
-      };
+  describe('loadConfig', () => {
+    test('should load valid YAML configuration', async () => {
+      const configYaml = `
+auto_sync: true
+upstream: GooseyPrime/OMFG
+create_pr: true
+pr_title: "Sync with upstream"
+pr_body: "Auto-sync changes"
+`;
 
-      const summary = summarizeChanges(syncResult);
-      expect(summary).toContain('**Sync Status:** SUCCESS');
-      expect(summary).toContain('**Files Changed:** 3');
-      expect(summary).toContain('src/index.js');
-      expect(summary).toContain('+10/-2');
+      mockContext.octokit.repos.getContent.mockResolvedValue({
+        data: {
+          content: Buffer.from(configYaml).toString('base64')
+        }
+      });
+
+      const config = await loadConfig(mockContext);
+      expect(config).toEqual({
+        auto_sync: true,
+        upstream: 'GooseyPrime/OMFG',
+        create_pr: true,
+        pr_title: 'Sync with upstream',
+        pr_body: 'Auto-sync changes'
+      });
     });
 
-    test('should include conflicts in summary', () => {
-      const syncResult = {
-        status: 'conflicts',
-        filesChanged: 1,
-        conflicts: ['src/config.js', 'README.md'],
-        changes: [],
-        error: null
-      };
+    test('should return null for missing config file', async () => {
+      mockContext.octokit.repos.getContent.mockRejectedValue({
+        status: 404,
+        message: 'Not Found'
+      });
 
-      const summary = summarizeChanges(syncResult);
-      expect(summary).toContain('**Conflicts:** 2');
-      expect(summary).toContain('src/config.js');
-      expect(summary).toContain('README.md');
-    });
-  });
-
-  describe('shouldProcessFile', () => {
-    test('should include all files with default patterns', () => {
-      expect(shouldProcessFile('any-file.js', '*', '')).toBe(true);
-      expect(shouldProcessFile('any-file.md', '', '')).toBe(true);
+      const config = await loadConfig(mockContext);
+      expect(config).toBeNull();
     });
 
-    test('should respect include patterns', () => {
-      expect(shouldProcessFile('index.js', '*.js', '')).toBe(true);
-      expect(shouldProcessFile('index.ts', '*.js', '')).toBe(false);
-      expect(shouldProcessFile('src/index.js', 'src/**', '')).toBe(true);
-      expect(shouldProcessFile('docs/README.md', 'src/**,docs/**', '')).toBe(true);
-    });
+    test('should throw error for API failures', async () => {
+      mockContext.octokit.repos.getContent.mockRejectedValue({
+        status: 500,
+        message: 'Internal Server Error'
+      });
 
-    test('should respect exclude patterns', () => {
-      expect(shouldProcessFile('node_modules/package.json', '*', 'node_modules/**')).toBe(false);
-      expect(shouldProcessFile('src/index.js', '*', '*.test.js')).toBe(true);
-      expect(shouldProcessFile('index.test.js', '*', '*.test.js')).toBe(false);
-    });
-  });
-
-  describe('matchesPattern', () => {
-    test('should match exact strings', () => {
-      expect(matchesPattern('file.js', 'file.js')).toBe(true);
-      expect(matchesPattern('file.js', 'other.js')).toBe(false);
-    });
-
-    test('should match wildcard patterns', () => {
-      expect(matchesPattern('file.js', '*.js')).toBe(true);
-      expect(matchesPattern('src/file.js', 'src/*')).toBe(true);
-      expect(matchesPattern('src/nested/file.js', 'src/*')).toBe(false);
-      expect(matchesPattern('src/nested/file.js', 'src/**')).toBe(true);
+      await expect(loadConfig(mockContext)).rejects.toThrow('Failed to load .omfg.yml');
     });
   });
 });

@@ -34,8 +34,9 @@ jobs:
 
     - name: Check build
       run: |
-        # Verify the main entry point can be loaded without errors
-        node -e "require('./app/index.js')" || echo "Entry point check failed"
+        # Verify the main entry point syntax is valid
+        node -c app/index.js
+        node -c app/syncFork.js
 
   security:
     runs-on: ubuntu-latest

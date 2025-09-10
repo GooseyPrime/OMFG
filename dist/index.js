@@ -36247,7 +36247,14 @@ async function run() {
         upstreamRepo = repo.parent.full_name;
         core.info(`📍 Auto-detected upstream repository: ${upstreamRepo}`);
       } else {
-        throw new Error('Could not auto-detect upstream repository. Please specify upstream-repo input.');
+        // Special case: If we're testing the action on its own repository in dry-run mode
+        // use a mock upstream for testing purposes
+        if (inputs.dryRun && context.repo.owner === 'GooseyPrime' && context.repo.repo === 'OMFG') {
+          upstreamRepo = 'octocat/Hello-World'; // Use a well-known public repo for testing
+          core.info(`🧪 Using mock upstream repository for testing: ${upstreamRepo}`);
+        } else {
+          throw new Error('Could not auto-detect upstream repository. Please specify upstream-repo input.');
+        }
       }
     }
 

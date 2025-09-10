@@ -20,6 +20,9 @@
                     A GitHub App for automated fork monitoring and synchronization as a service. 
                     Keep your forks in sync with upstream repositories effortlessly! 🚀
                 </p>
+                <div class="hero-image">
+                    <img src="/assets/mainimage.png" alt="OMFG - Oh My Forking Git" class="main-image">
+                </div>
                 <div class="hero-actions">
                     <a href="https://github.com/apps/omfg" class="btn btn-primary" target="_blank" rel="noopener">
                         Install GitHub App
@@ -88,6 +91,9 @@
 
     <footer>
         <div class="container">
+            <div class="visit-counter">
+                <span id="visit-count">Loading...</span> visits
+            </div>
             <p>&copy; 2024 OMFG - Made with ❤️ by <a href="https://github.com/GooseyPrime" target="_blank" rel="noopener">GooseyPrime</a></p>
             <div class="footer-links">
                 <a href="https://github.com/GooseyPrime/OMFG" target="_blank" rel="noopener">GitHub</a>
@@ -96,5 +102,21 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        // Simple visit counter using localStorage
+        function updateVisitCounter() {
+            let visitCount = localStorage.getItem('omfg-visit-count');
+            if (!visitCount) {
+                visitCount = 0;
+            }
+            visitCount = parseInt(visitCount) + 1;
+            localStorage.setItem('omfg-visit-count', visitCount);
+            document.getElementById('visit-count').textContent = visitCount.toLocaleString();
+        }
+        
+        // Update counter when page loads
+        document.addEventListener('DOMContentLoaded', updateVisitCounter);
+    </script>
 </body>
 </html>

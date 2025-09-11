@@ -45,3 +45,13 @@ https://<your-railway-subdomain>.up.railway.app/
 ---
 
 For issues or advanced configuration, see [Probot docs](https://probot.github.io/docs/) and [Railway docs](https://docs.railway.app/).
+
+## Connection Issues Fix (v1.0.0+)
+
+**Enhanced Startup:** OMFG now includes an enhanced startup script (`startup.js`) that prevents "connection refused" errors by:
+- Providing dummy environment variables if GitHub App credentials are missing
+- Adding comprehensive startup logging for better debugging
+- Ensuring the service responds to HTTP requests even in setup mode
+- Binding to `0.0.0.0` to accept connections from Railway's load balancer
+
+If you still see connection issues, check the deployment logs for the enhanced startup messages.

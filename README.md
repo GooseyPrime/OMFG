@@ -35,7 +35,7 @@ The landing page features:
 
 ### As a GitHub App
 
-1. **Install the App**: Visit the [OMFG GitHub App page](#) and click "Install"
+1. **Install the App**: Visit the [OMFG GitHub App page](https://github.com/apps/omfg) and click "Install"
 2. **Choose Repositories**: Select which repositories you want OMFG to monitor
 3. **Configure Repositories**: Add a `.omfg.yml` configuration file to each repository you want to sync
 
@@ -219,4 +219,3 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 ---
 
 Made with ❤️ by [GooseyPrime](https://github.com/GooseyPrime)
-# This trigger CI

@@ -7,12 +7,157 @@
 
 const { syncFork, loadConfig, validateConfig } = require('./syncFork');
 
+// Start health server for production environments
+try {
+  require('./health-server');
+} catch (error) {
+  console.warn('Health server could not be started:', error.message);
+}
+
+// Add global error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit the process, just log the error
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process, just log the error
+});
+
 /**
  * Main Probot app function
  * @param {import('probot').Probot} app - The Probot app instance
+ * @param {Object} options - App options including addHandler for custom routes
  */
-module.exports = (app) => {
+module.exports = (app, { addHandler } = {}) => {
   app.log.info('OMFG GitHub App is starting up! 🚀');
+
+  // Add health check and basic route handlers for production deployments
+  if (addHandler) {
+    // Health endpoint - essential for deployment health checks
+    // This needs to work even in setup mode for Railway and other platforms
+    addHandler((req, res) => {
+      if (req.method === 'GET') {
+        const path = req.url?.split('?')[0] || '';
+        if (path === '/health' || path === '/healthz') {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({
+            status: 'ok',
+            app: 'OMFG',
+            message: 'Oh My Forking Git is running! 🚀',
+            timestamp: new Date().toISOString(),
+            version: '1.0.0'
+          }));
+          return true;
+        }
+      }
+      return false;
+    });
+
+    // Root endpoint - provide a basic landing page
+    addHandler((req, res) => {
+      if (req.method === 'GET') {
+        const path = req.url?.split('?')[0] || '';
+        if (path === '/') {
+          res.writeHead(200, { 'content-type': 'text/html' });
+          res.end(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>OMFG - Oh My Forking Git</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+               max-width: 800px; margin: 50px auto; padding: 20px; line-height: 1.6; }
+        h1 { color: #0366d6; }
+        .status { background: #d4edda; padding: 10px; border-radius: 4px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🚀 OMFG - Oh My Forking Git</h1>
+    <div class="status">✅ Service is running and healthy</div>
+    <p>GitHub App for automated fork monitoring and synchronization.</p>
+    <ul>
+        <li><a href="/health">Health Check API</a></li>
+        <li><a href="/probot">GitHub App Setup</a></li>
+    </ul>
+    <p><small>Version 1.0.0 | <a href="https://github.com/GooseyPrime/OMFG">Source Code</a></small></p>
+</body>
+</html>`);
+          return true;
+        }
+      }
+      return false;
+    });
+
+    // Handle common static file requests to prevent 404s
+    addHandler((req, res) => {
+      if (req.method === 'GET') {
+        const path = req.url?.split('?')[0] || '';
+        
+        // Handle favicon.ico
+        if (path === '/favicon.ico') {
+          res.writeHead(204); // No Content
+          res.end();
+          return true;
+        }
+        
+        // Handle robots.txt - allow indexing of basic pages
+        if (path === '/robots.txt') {
+          res.writeHead(200, { 'content-type': 'text/plain' });
+          res.end(`User-agent: *
+Allow: /
+Allow: /health
+Disallow: /probot/
+Disallow: /api/
+`);
+          return true;
+        }
+        
+        // Handle index.html by redirecting to root
+        if (path === '/index.html') {
+          res.writeHead(302, { 'Location': '/' });
+          res.end();
+          return true;
+        }
+
+        // Handle basic API info endpoint
+        if (path === '/api' || path === '/api/') {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({
+            name: 'OMFG GitHub App',
+            version: '1.0.0',
+            status: 'running',
+            endpoints: {
+              health: '/health',
+              webhooks: '/api/github/webhooks',
+              setup: '/probot'
+            }
+          }));
+          return true;
+        }
+      }
+      return false;
+    });
+
+    // Handle POST requests to root (GitHub webhooks might hit this)
+    addHandler((req, res) => {
+      if (req.method === 'POST') {
+        const path = req.url?.split('?')[0] || '';
+        const userAgent = req.headers['user-agent'] || '';
+        
+        // Check if this looks like a GitHub webhook
+        if (path === '/' && userAgent.includes('GitHub-Hookshot')) {
+          // Redirect GitHub webhooks to the proper endpoint
+          res.writeHead(302, { 'Location': '/api/github/webhooks' });
+          res.end();
+          return true;
+        }
+      }
+      return false;
+    });
+  }
 
   // Handle repository installation events
   app.on('installation.created', async (context) => {

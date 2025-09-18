@@ -24,7 +24,8 @@ if (!process.env.APP_ID) {
 
 if (!process.env.PRIVATE_KEY) {
   console.log('⚠️  PRIVATE_KEY not found, setting dummy value for deployment compatibility');
-  process.env.PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJhvV3jKL9Jv\ndummy-key-for-deployment-only\n-----END PRIVATE KEY-----';
+  // gitguardian:ignore
+  process.env.PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJhvV3jKL9Jv\n**THIS-IS-A-FAKE-TEST-KEY-NOT-REAL**\ndummy-key-for-deployment-only-not-a-real-private-key\n-----END PRIVATE KEY-----';
 }
 
 if (!process.env.WEBHOOK_SECRET) {

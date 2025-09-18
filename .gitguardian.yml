@@ -1,0 +1,26 @@
+# GitGuardian configuration for OMFG repository
+# This file configures GitGuardian to ignore test/dummy secrets
+
+# Global paths to ignore
+paths-ignore:
+  - "node_modules/**"
+  - "coverage/**"
+  - ".git/**"
+
+# Specific secrets to ignore (for test/dummy keys)
+secrets-ignore:
+  - name: "Dummy deployment key in startup.js"
+    match: "**THIS-IS-A-FAKE-TEST-KEY-NOT-REAL**"
+  - name: "Dummy deployment key identifier"
+    match: "dummy-key-for-deployment-only-not-a-real-private-key"
+
+# Ignore specific secret types in specific files
+ignore-default-secret-types:
+  - "RSA Private Key" # Only ignore RSA keys in startup.js since it's a test key
+
+# Custom rules to ignore test patterns
+detectors:
+  rsa_private_key:
+    - path: "startup.js"
+      ignore: true
+      reason: "Contains dummy RSA key for deployment compatibility, not a real secret"

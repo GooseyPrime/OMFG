@@ -30,10 +30,27 @@ process.on('unhandledRejection', (reason, promise) => {
  * @param {import('probot').Probot} app - The Probot app instance
  * @param {Object} options - App options including addHandler for custom routes
  */
-module.exports = (app, { addHandler } = {}) => {
-  const addHandler = options.addHandler;
-  
+module.exports = (app, options = {}) => {
+  const { addHandler } = options;
+  // Enhanced startup logging for deployment debugging
   app.log.info('OMFG GitHub App is starting up! 🚀');
+  app.log.info('Environment info:', {
+    nodeVersion: process.version,
+    port: process.env.PORT || 3000,
+    hasAppId: !!process.env.APP_ID,
+    hasPrivateKey: !!process.env.PRIVATE_KEY,
+    hasWebhookSecret: !!process.env.WEBHOOK_SECRET,
+    webhookPath: app.webhookPath
+  });
+
+  // Add process error handling for uncaught exceptions
+  process.on('uncaughtException', (error) => {
+    app.log.error('Uncaught exception during startup:', error);
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    app.log.error('Unhandled rejection at:', promise, 'reason:', reason);
+  });
 
   // Add health check and basic route handlers for production deployments
   if (addHandler) {
@@ -163,7 +180,11 @@ Disallow: /api/
 
   // Handle repository installation events
   app.on('installation.created', async (context) => {
-    app.log.info(`OMFG installed on ${context.payload.installation.account.login}`);
+    try {
+      app.log.info(`OMFG installed on ${context.payload.installation.account.login}`);
+    } catch (error) {
+      app.log.error('Error processing installation.created event:', error);
+    }
   });
 
   // Handle push events
@@ -178,8 +199,15 @@ Disallow: /api/
 
       app.log.info(`Push event received for ${repository.full_name} on ${ref}`);
 
-      // Load and validate configuration
-      const config = await loadConfig(context);
+      // Load and validate configuration with error handling
+      let config;
+      try {
+        config = await loadConfig(context);
+      } catch (configError) {
+        app.log.error(`Failed to load config for ${repository.full_name}:`, configError);
+        return;
+      }
+
       if (!config) {
         app.log.debug(`No .omfg.yml found in ${repository.full_name}, skipping`);
         return;
@@ -194,7 +222,11 @@ Disallow: /api/
       // Check if this is a fork and auto_sync is enabled
       if (repository.fork && config.auto_sync) {
         app.log.info(`Auto-sync enabled for fork ${repository.full_name}`);
-        await syncFork(context, config);
+        try {
+          await syncFork(context, config);
+        } catch (syncError) {
+          app.log.error(`Fork sync failed for ${repository.full_name}:`, syncError);
+        }
       }
     } catch (error) {
       app.log.error('Error processing push event:', error);
@@ -288,5 +320,18 @@ For more information, visit: https://github.com/GooseyPrime/OMFG`
   //   });
   // });
 
+  // Enhanced final startup logging
   app.log.info('OMFG GitHub App is ready! 🎯');
+  app.log.info('App configuration status:', {
+    isSetupMode: !process.env.APP_ID || !process.env.PRIVATE_KEY,
+    webhookPath: app.webhookPath,
+    version: require('../package.json').version
+  });
+  
+  // Log ready status after initialization is complete
+  app.ready().then(() => {
+    app.log.info('OMFG app initialization completed successfully');
+  }).catch((error) => {
+    app.log.error('OMFG app initialization failed:', error);
+  });
 };

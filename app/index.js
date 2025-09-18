@@ -30,7 +30,7 @@ process.on('unhandledRejection', (reason, promise) => {
  * @param {import('probot').Probot} app - The Probot app instance
  * @param {Object} options - App options including addHandler for custom routes
  */
-module.exports = (app, options = {}) => {
+module.exports = (app, { addHandler } = {}) => {
   const addHandler = options.addHandler;
   
   app.log.info('OMFG GitHub App is starting up! 🚀');

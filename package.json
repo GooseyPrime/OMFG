@@ -4,7 +4,8 @@
   "description": "Oh My Forking Git - A GitHub App for automated fork monitoring and synchronization",
   "main": "app/index.js",
   "scripts": {
-    "start": "probot run ./app/index.js",
+    "start": "node start.js",
+    "start:probot": "probot run ./app/index.js",
     "dev": "nodemon --exec probot run ./app/index.js",
     "start:landing": "node server.js",
     "test": "jest",

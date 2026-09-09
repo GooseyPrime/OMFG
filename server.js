@@ -14,6 +14,7 @@ const port = basePort + 1;
 const publicPath = path.join(__dirname, 'public');
 const indexPath = path.join(publicPath, 'index.html');
 const hasLandingPage = fs.existsSync(indexPath);
+const landingPageContent = hasLandingPage ? fs.readFileSync(indexPath, 'utf8') : null;
 const serverState = { isListening: false };
 const landingPageRequests = new Map();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -118,7 +119,7 @@ app.get('/', (req, res) => {
     return;
   }
 
-  res.sendFile(indexPath);
+  res.type('html').send(landingPageContent);
 });
 
 // Health check for the landing page server

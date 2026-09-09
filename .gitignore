@@ -112,6 +112,7 @@ node_modules/
 
 # dotenv environment variable files
 .env*
+!.env.example
 
 # IDE and editor files
 .vscode/

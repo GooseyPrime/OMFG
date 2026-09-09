@@ -141,6 +141,9 @@ npm test
 # Run linting
 npm run lint
 
+# Start the GitHub App startup server (matches package.json "start")
+npm start
+
 # Start development server (GitHub App)
 npm run dev
 

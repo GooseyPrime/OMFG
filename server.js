@@ -13,6 +13,7 @@ const basePort = Number.isNaN(rawBasePort) ? 3000 : rawBasePort;
 const port = basePort + 1;
 const publicPath = path.join(__dirname, 'public');
 const indexPath = path.join(publicPath, 'index.html');
+const hasLandingPage = fs.existsSync(indexPath);
 const serverState = { isListening: false };
 
 function getHealthPayload(isListening) {
@@ -85,7 +86,7 @@ app.use('/assets', express.static(path.join(publicPath, 'assets')));
 
 // Serve the landing page at root
 app.get('/', (req, res) => {
-  if (!fs.existsSync(indexPath)) {
+  if (!hasLandingPage) {
     const message = `Missing ${indexPath}. Add public/index.html before starting the landing page server.`;
     res.status(503).type('html').send(buildLandingErrorHtml(message));
     return;

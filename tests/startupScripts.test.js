@@ -21,6 +21,10 @@ function createMockResponse() {
 }
 
 describe('startup hardening helpers', () => {
+  beforeEach(() => {
+    landingServer.landingPageRequests.clear();
+  });
+
   test('startup health payload is 503 before server is listening', () => {
     const health = getHealthPayload(false, false, 3000);
 
@@ -68,5 +72,17 @@ describe('startup hardening helpers', () => {
 
     expect(payload.code).toBe('EADDRINUSE');
     expect(payload.message).toContain('already in use');
+  });
+
+  test('landing page route limiter only blocks after threshold', () => {
+    const now = Date.now();
+    const key = '127.0.0.1';
+    let blocked = false;
+
+    for (let attempt = 0; attempt <= 120; attempt += 1) {
+      blocked = landingServer.isRateLimited(key, now);
+    }
+
+    expect(blocked).toBe(true);
   });
 });

@@ -15,6 +15,9 @@ const publicPath = path.join(__dirname, 'public');
 const indexPath = path.join(publicPath, 'index.html');
 const hasLandingPage = fs.existsSync(indexPath);
 const serverState = { isListening: false };
+const landingPageRequests = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX = 120;
 
 function getHealthPayload(isListening) {
   return {
@@ -81,11 +84,34 @@ function buildServerErrorPayload(error) {
   };
 }
 
+function isRateLimited(key, now = Date.now()) {
+  const existing = landingPageRequests.get(key);
+  const resetTime = now + RATE_LIMIT_WINDOW_MS;
+
+  if (!existing || existing.resetAt <= now) {
+    landingPageRequests.set(key, { count: 1, resetAt: resetTime });
+    return false;
+  }
+
+  existing.count += 1;
+  if (existing.count > RATE_LIMIT_MAX) {
+    return true;
+  }
+
+  return false;
+}
+
 // Serve static assets
 app.use('/assets', express.static(path.join(publicPath, 'assets')));
 
 // Serve the landing page at root
 app.get('/', (req, res) => {
+  const requester = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+  if (isRateLimited(requester)) {
+    res.status(429).type('html').send(buildLandingErrorHtml('Too many requests. Please try again shortly.'));
+    return;
+  }
+
   if (!hasLandingPage) {
     const message = `Missing ${indexPath}. Add public/index.html before starting the landing page server.`;
     res.status(503).type('html').send(buildLandingErrorHtml(message));
@@ -124,5 +150,7 @@ module.exports = app;
 module.exports.buildLandingErrorHtml = buildLandingErrorHtml;
 module.exports.buildServerErrorPayload = buildServerErrorPayload;
 module.exports.getHealthPayload = getHealthPayload;
+module.exports.isRateLimited = isRateLimited;
+module.exports.landingPageRequests = landingPageRequests;
 module.exports.serverState = serverState;
 module.exports.startServer = startServer;

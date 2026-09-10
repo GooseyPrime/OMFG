@@ -29,7 +29,8 @@ Set the following in Railway’s dashboard under "Variables":
 1. Push all files to your GitHub repository.
 2. From Railway’s dashboard, "New Project" > "Deploy from GitHub repo".
 3. Set environment variables as above.
-4. Deploy. Railway will install dependencies, build, and serve your Probot app automatically.
+4. Set the Railway start command to `npm start` (this matches `package.json` and runs `node startup.js`).
+5. Deploy. Railway will install dependencies, build, and serve your Probot app automatically.
 
 Your webhook URL for GitHub App settings will be:
 ```
@@ -48,8 +49,8 @@ For issues or advanced configuration, see [Probot docs](https://probot.github.io
 
 ## Connection Issues Fix (v1.0.0+)
 
-**Enhanced Startup:** OMFG now includes an enhanced startup script (`startup.js`) that prevents "connection refused" errors by:
-- Providing dummy environment variables if GitHub App credentials are missing
+**Enhanced Startup:** OMFG now includes an enhanced startup script (`startup.js`, launched with `npm start`) that prevents "connection refused" errors by:
+- Returning a readable startup status page and JSON health response when GitHub App credentials are missing
 - Adding comprehensive startup logging for better debugging
 - Ensuring the service responds to HTTP requests even in setup mode
 - Binding to `0.0.0.0` to accept connections from Railway's load balancer
